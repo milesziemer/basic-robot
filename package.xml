@@ -5,14 +5,23 @@
   <version>0.0.1</version>
   <description>Basic robot using lidar to navigate</description>
   <maintainer email="mziemer@email.sc.edu">miles</maintainer>
-  <!-- <license>TODO: License declaration</license> -->
+  <license>TODO: License declaration</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
+
+  <exec_depend>basic_robot_interfaces</exec_depend>
 
   <depend>rclcpp</depend>
+  <depend>rclpy</depend>
+  <depend>python3-gpiozero</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
+  <!-- <test_depend>amend_copyright</test_depend> -->
+  <!-- <test_depend>ament_flake8</test_depend> -->
+  <!-- <test_depend>ament_pep257</test_depend> -->
+  <!-- <test_depend>python3-pytest</test_depend> -->
 
   <export>
     <build_type>ament_cmake</build_type>
