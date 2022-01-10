@@ -18,7 +18,7 @@ class Navigator(Node):
     def __init__(self):
         super().__init__("navigator_node")
         self.sub = self.create_subscription(Polar, "lidar_topic", self.callback, 10)
-        self.pub = self.create_publisher(Wheels, "drive_topic", 10)
+        self.pub = self.create_publisher(DirectionRelative, "drive_topic", 10)
         self.command = ""  # Keep track of previous command
 
     def log(self, info):
