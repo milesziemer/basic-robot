@@ -9,4 +9,4 @@ Basic robot contoller using ROS2. Lidar node reads from RPLIDAR serial port, pub
 
 ## Credits
  - python3-gpiozero: interfacing with the gpio pins https://gpiozero.readthedocs.io/en/stable/
- - rplidar_ros: inspiration for setting up the serial port for rplidar https://github.com/robopeak/rplidar_ros
+ - rplidar_ros: inspiration for setting up the serial port for the lidar sensor https://github.com/robopeak/rplidar_ros
