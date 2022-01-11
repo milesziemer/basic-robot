@@ -3,8 +3,8 @@ import time
 import rclpy
 from rclpy.node import Node
 
-from robot_interfaces.msg import DirectionRelative
 from gpiozero import PWMOutputDevice, LED
+from basic_robot_interfaces.msg import Wheels
 
 LEFT_FWD = 5
 LEFT_BWD = 13
@@ -16,50 +16,25 @@ ENABLE = 26
 PWM_FREQUENCY = 1000
 
 
-class DifferentialDrive:
-    """Controls the forward and backward pins, and the enable pin"""
+# class DifferentialDrive:
+#     """Controls the forward and backward pins, and the enable pin"""
 
-    def __init__(self):
-        self.left_fwd = PWMOutputDevice(pin=LEFT_FWD, frequency=PWM_FREQUENCY)
-        self.right_fwd = PWMOutputDevice(pin=RIGHT_FWD, frequency=PWM_FREQUENCY)
-        self.left_bwd = PWMOutputDevice(pin=LEFT_BWD, frequency=PWM_FREQUENCY)
-        self.right_bwd = PWMOutputDevice(pin=RIGHT_BWD, frequency=PWM_FREQUENCY)
-        self.enable = LED(pin=ENABLE)
-        self.enable.on()  # Enable is active high connected to MOSFET, turn on to stop
+#     def __init__(self):
+#         self.left_fwd = PWMOutputDevice(pin=LEFT_FWD, frequency=PWM_FREQUENCY)
+#         self.right_fwd = PWMOutputDevice(pin=RIGHT_FWD, frequency=PWM_FREQUENCY)
+#         self.left_bwd = PWMOutputDevice(pin=LEFT_BWD, frequency=PWM_FREQUENCY)
+#         self.right_bwd = PWMOutputDevice(pin=RIGHT_BWD, frequency=PWM_FREQUENCY)
+#         self.enable = LED(pin=ENABLE)
+#         self.enable.on()  # Enable is active high connected to MOSFET, turn on to stop
 
-    def stop(self):
-        self.left_fwd.off()
-        self.right_fwd.off()
-        self.left_bwd.off()
-        self.right_bwd.off()
+#     def stop(self):
+#         self.left_fwd.off()
+#         self.right_fwd.off()
+#         self.left_bwd.off()
+#         self.right_bwd.off()
 
-    def drive(self, translation: int, rotation: int):
-        """Commands are simple, rotate left or right, go forward or back, or stop"""
-        if translation == 0 and rotation == 0:
-            self.enable.on()
-            self.stop()
-        else:
-            if translation < 0:
-                self.left_fwd.off()
-                self.right_fwd.off()
-                self.left_bwd.on()
-                self.right_bwd.on()
-            elif rotation < 0:
-                self.left_fwd.off()
-                self.right_bwd.off()
-                self.left_bwd.on()
-                self.right_fwd.on()
-            elif rotation > 0:
-                self.left_bwd.off()
-                self.right_fwd.off()
-                self.left_fwd.on()
-                self.right_bwd.on()
-            else:
-                self.left_bwd.off()
-                self.right_bwd.off()
-                self.left_fwd.on()
-                self.right_fwd.on()
-            self.enable.off()
+#     def drive(self):
+#         pass
 
 
 class Drive(Node):
@@ -67,24 +42,55 @@ class Drive(Node):
 
     def __init__(self):
         super().__init__("drive_node")
-        self.subscription = self.create_subscription(
-            DirectionRelative, "drive_topic", self.callback, 10
-        )
-        self.differential_drive = DifferentialDrive()
+        self.sub = self.create_subscription(Wheels, "drive_topic", self.callback, 10)
+        self.left_fwd = PWMOutputDevice(pin=LEFT_FWD, frequency=PWM_FREQUENCY)
+        self.right_fwd = PWMOutputDevice(pin=RIGHT_FWD, frequency=PWM_FREQUENCY)
+        self.left_bwd = PWMOutputDevice(pin=LEFT_BWD, frequency=PWM_FREQUENCY)
+        self.right_bwd = PWMOutputDevice(pin=RIGHT_BWD, frequency=PWM_FREQUENCY)
+        self.enable = LED(pin=ENABLE)
+        self.enable.on()  # Enable is active high connected to MOSFET, turn on to stop
 
-    def callback(self, msg: DirectionRelative):
+    def log(self, info):
+        self.get_logger().info(info)
+
+    def stop(self):
+        """Stop the motors"""
+        self.left_fwd.off()
+        self.right_fwd.off()
+        self.left_bwd.off()
+        self.right_bwd.off()
+
+    def callback(self, msg: Wheels):
         """Runs on message from drive topic, delivers proper drive command to gpio pins"""
-        translation = 0
-        rotation = 0
-        if msg.left:
-            rotation = 1
-        elif msg.right:
-            rotation = -1
-        elif msg.forward:
-            translation = 1
-        elif msg.backward:
-            translation = -1
-        self.differential_drive.drive(translation=translation, rotation=rotation)
+        self.enable.off()
+        if msg.backright > 0 and msg.backleft > 0:
+            self.log("forward")
+            self.right_bwd.off()
+            self.left_bwd.off()
+            self.right_fwd.on()
+            self.left_fwd.on()
+        elif msg.backright < 0 and msg.backleft > 0:
+            self.log("turn right")
+            self.right_fwd.off()
+            self.left_bwd.off()
+            self.right_bwd.on()
+            self.left_fwd.on()
+        elif msg.backright > 0 and msg.backleft < 0:
+            self.log("turn left")
+            self.right_bwd.off()
+            self.left_fwd.off()
+            self.right_fwd.on()
+            self.left_bwd.on()
+        elif msg.backright < 0 and msg.backleft < 0:
+            self.log("back")
+            self.right_fwd.off()
+            self.left_fwd.off()
+            self.right_bwd.on()
+            self.left_bwd.on()
+        else:
+            self.enable.on()
+            self.log("stop")
+            self.stop()
 
 
 def main(args=None):
@@ -96,52 +102,6 @@ def main(args=None):
 
     drive.destroy_node()
     rclpy.shutdown()
-
-
-def test_left(dd: DifferentialDrive):
-    dd.drive(translation=0, rotation=-1)
-    time.sleep(3)
-    dd.stop()
-
-
-def test_right(dd: DifferentialDrive):
-    dd.drive(translation=0, rotation=1)
-    time.sleep(3)
-    dd.stop()
-
-
-def test_fwd(dd: DifferentialDrive):
-    dd.drive(translation=1, rotation=0)
-    time.sleep(3)
-    dd.stop()
-
-
-def test_bwd(dd: DifferentialDrive):
-    dd.drive(translation=-1, rotation=0)
-    time.sleep(3)
-    dd.stop()
-
-
-def test():
-
-    print("start test")
-    ddrive = DifferentialDrive()
-
-    print("test left...")
-    test_left(ddrive)
-    print("done.\n")
-
-    print("test right...")
-    test_right(ddrive)
-    print("done.\n")
-
-    print("test forward...")
-    test_fwd(ddrive)
-    print("done.\n")
-
-    print("test back...")
-    test_bwd(ddrive)
-    print("done.\n")
 
 
 if __name__ == "__main__":
