@@ -62,35 +62,36 @@ class Drive(Node):
 
     def callback(self, msg: Wheels):
         """Runs on message from drive topic, delivers proper drive command to gpio pins"""
-        self.enable.off()
-        if msg.backright > 0 and msg.backleft > 0:
-            self.log("forward")
-            self.right_bwd.off()
-            self.left_bwd.off()
-            self.right_fwd.on()
-            self.left_fwd.on()
-        elif msg.backright < 0 and msg.backleft > 0:
-            self.log("turn right")
-            self.right_fwd.off()
-            self.left_bwd.off()
-            self.right_bwd.on()
-            self.left_fwd.on()
-        elif msg.backright > 0 and msg.backleft < 0:
-            self.log("turn left")
-            self.right_bwd.off()
-            self.left_fwd.off()
-            self.right_fwd.on()
-            self.left_bwd.on()
-        elif msg.backright < 0 and msg.backleft < 0:
-            self.log("back")
-            self.right_fwd.off()
-            self.left_fwd.off()
-            self.right_bwd.on()
-            self.left_bwd.on()
-        else:
+        self.log(f"l: {msg.backleft}, r: {msg.backright}")
+        if msg.backleft == 0 and msg.backright == 0:
             self.enable.on()
-            self.log("stop")
             self.stop()
+        else:
+            if msg.backright < 0 and msg.backleft > 0:
+                self.log("turn right")
+                self.right_fwd.off()
+                self.left_bwd.off()
+                self.right_bwd.on()
+                self.left_fwd.on()
+            elif msg.backright > 0 and msg.backleft < 0:
+                self.log("turn left")
+                self.right_bwd.off()
+                self.left_fwd.off()
+                self.right_fwd.on()
+                self.left_bwd.on()
+            elif msg.backright < 0 and msg.backleft < 0:
+                self.log("back")
+                self.right_fwd.off()
+                self.left_fwd.off()
+                self.right_bwd.on()
+                self.left_bwd.on()
+            else:
+                self.log("forward")
+                self.right_bwd.off()
+                self.left_bwd.off()
+                self.right_fwd.on()
+                self.left_fwd.on()
+            self.enable.off()
 
 
 def main(args=None):

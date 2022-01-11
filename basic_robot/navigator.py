@@ -25,17 +25,20 @@ class Navigator(Node):
         self.get_logger().info(info)
 
     def callback(self, msg: Polar):
+        # 0 radius indicates an invalid reading
+        if msg.radius == 0:
+            return
         cmd = Wheels()
-        cmd.backleft = 1.0
-        cmd.backright = 1.0
+        cmd.backleft = 0.0
+        cmd.backright = 0.0
         direction = "forward"
         theta = msg.theta
-        # Check close to an object, not including 0 (lidar sends that to indicate invalid)
+        # Check if close to an object
         if 0 < msg.radius < WARN_DIST:
             if 135 < theta < 225:  # Danger front
                 direction = "backward"
-                cmd.backright = 1.0
-                cmd.backleft = 1.0
+                cmd.backright = -1.0
+                cmd.backleft = -1.0
             elif 225 < theta < 315:  # Danger right
                 direction = "left"
                 cmd.backright = 1.0
@@ -44,6 +47,12 @@ class Navigator(Node):
                 direction = "right"
                 cmd.backright = -1.0
                 cmd.backleft = 1.0
+            else:
+                cmd.backright = 1.0
+                cmd.backleft = 1.0
+        else:
+            cmd.backleft = 1.0
+            cmd.backright = 1.0
 
         if direction != self.prev_cmd:
             self.log(f"publishing {direction}")
